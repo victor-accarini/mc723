@@ -40,6 +40,7 @@ AC_ISA(mips1){
   ac_format Type_NOP	= "%op:6 %rs:5 %rt:5 %rd:5 %shamt:5 %func:6";
   ac_format Type_I  	= "%op:6 %rs:5 %rt:5 %imm:16:s";
   ac_format Type_I_LOAD	= "%op:6 %rs:5 %rt:5 %imm:16:s";
+  ac_format Type_I_LOAD_MEM	= "%op:6 %rs:5 %rt:5 %imm:16:s";
   ac_format Type_J  	= "%op:6 %addr:26";
 
   ac_instr<Type_I_LOAD_MEM> lb, lbu, lh, lhu, lw, lwl, lwr;

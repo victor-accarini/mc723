@@ -56,51 +56,49 @@ using namespace mips1_parms;
 int countForward = 0;
 int countStalls = 0;
 
-//Pipeline flags
-bool ID_EX_regWrite = 0;
-bool EX_MEM_regWrite = 0;
-bool MEM_WB_regWrite = 0;
+//5-Stage Pipeline controls
+int rdIfId = 0, rdIdEx = 0, rdExMem = 0, rdMemWb = 0;
+int rtIfId = 0, rtIdEx = 0, rtExMem = 0, rtMemWb = 0;
+int rsIfId = 0, rsIdEx = 0, rsExMem = 0, rsMemWb = 0;
+bool preMemRead = 0, Id_Ex_MemRead = 0, Ex_Mem_MemRead = 0;
 
-bool ID_EX_memRead = 0;
-bool EX_MEM_memRead = 0;
-
-//Rd in 5 stages of the 5-stage pipeline:forward
-int rdIf = 0;
-int rdId = 0;
-int rdEx = 0;
-int rdMem = 0;
-//Rs in 5 stages of the 5-stage pipeline:forward
-int rsIf = 0;
-int rsId = 0;
-int rsEx = 0;
-int rsMem = 0;
-//Rt in 4 stages of the 5-stage pipeline:forward
-int rtIf = 0;
-int rtId = 0;
-int rtEx = 0;
-int rtMem = 0;
-
-//Rt in ID stage:stall
-int rtId_stall=0;
-
-//Rs and Rt in IF stage:stall
-int rsIf_stall=0;
-int rtIf_stall=0;
-
-void forward(){
-  //Ex hazard: forward
-  if (MEM_WB_regWrite && rdMem != 0 && (rdMem == rsId || rdMem == rtId))
-    countForward++;
-  //Mem hazard: forward
-  if (MEM_WB_regWrite && rdMem != 0 && !(EX_MEM_regWrite && rdEx != 0) && (rdEx != rsId || rdEx != rtId) &&(rdMem == rsId || rdMem == rtId))
-    countForward++;
+void movepipe(){
+  Ex_Mem_MemRead = Id_Ex_MemRead;
+  Id_Ex_MemRead = preMemRead;
+  
+  rdMemWb = rdExMem;
+  rdExMem = rdIdEx;
+  rdIdEx = rdIfId;
+  
+  rtMemWb = rtExMem;
+  rtExMem = rtIdEx;
+  rtIdEx = rtIfId;
+  
+  rsMemWb = rsExMem;
+  rsExMem = rsIdEx;
+  rsIdEx = rsIfId;
 }
 
-void dataHazard(){
-  //Load-use
-  if (ID_EX_memRead && (rtId_stall == rsIf_stall || rtId_stall == rtIf_stall)){
+void stall_check(){
+  if (Id_Ex_MemRead && (rtIdEx == rsIfId || rtIdEx == rtIfId))
     countStalls++;
+}
+
+void pipecontrol5(){
+  int i;
+  
+  for (i = 0; i < 4; i++){
+    movepipe();
+    preMemRead = 0;
+    rdIfId = 0;
+    rtIfId = 0;
+    rsIfId = 0;
+    stall_check();
   }
+  
+  //dbg_printf("rd: %2d %2d %2d %2d\nrt: %2d %2d %2d %2d\nrs: %2d %2d %2d %2d\n", rdIfId, rdIdEx, rdExMem, rdMemWb
+  , rtIfId, rtIdEx, rtExMem, rtMemWb, rsIfId, rsIdEx, rsExMem, rsMemWb);
+  
 }
 
 //!Generic instruction behavior method.
@@ -113,147 +111,57 @@ void ac_behavior( instruction )
   npc = ac_pc + 4;
 #endif 
   
-  //Update pipeline control registers
-  MEM_WB_regWrite = EX_MEM_regWrite;
-  EX_MEM_regWrite = ID_EX_regWrite;
-  
-  //Update registers in the pipeline
-  rdMem = rdEx;
-  rdEx = rdId;
-  
-  rtId_stall = rtIf_stall;
+  movepipe();
 };
  
 //! Instruction Format behavior methods.
 void ac_behavior( Type_R ){
+  preMemRead = 0;
+  rdIfId = rd;
+  rtIfId = rt;
+  rsIfId = rs;
   
-  ID_EX_regWrite = 1; //Signal RegWrite = 1
-  
-  //forward
-  rdId = rd;
-  
-  rsId = rs;
-  
-  rtId = rt;
-  
-  forward();
-  //-----
-  
-  //stall
-  rtIf_stall = rt;
-  rsIf_stall = rs;
-  
-  dataHazard();
-  //-----
-  
-  dbg_printf("rdId: %2d rdEx: %2d rdMem: %2d rtId: %2d rsId: %2d\n", rdId, rdEx, rdMem, rtId, rsId);
+  stall_check();
 }
-
 void ac_behavior( Type_NOP ){
+  preMemRead = 0;
+  rdIfId = 0;
+  rtIfId = 0;
+  rsIfId = 0;
   
-  ID_EX_regWrite = 0;
-  
-  rdId = 0;
-  
-  rsId = 0;
-  
-  rtId = 0;
-  
-  forward();
-  
-  //stall
-  rtIf_stall = rt;
-  rsIf_stall = rs;
-  
-  dataHazard();
-  //-----
-  
-  dbg_printf("rdId: %2d rdEx: %2d rdMem: %2d rtId: %2d rsId: %2d\n", rdId, rdEx, rdMem, rtId, rsId);
+  stall_check();
 }
-
 void ac_behavior( Type_I ){
+  preMemRead = 0;
+  rdIfId = 0;
+  rtIfId = rt;
+  rsIfId = rs;
   
-  ID_EX_regWrite = 0; //Signal RegWrite = 0
-
-  rdId = 0;
-  
-  rsId = rs;
-  
-  rtId = rt;
-  
-  forward();
-  
-  //stall
-  rtIf_stall = rt;
-  rsIf_stall = rs;
-  
-  dataHazard();
-  //-----
-  
-  dbg_printf("rdId: %2d rdEx: %2d rdMem: %2d rtId: %2d rsId: %2d\n", rdId, rdEx, rdMem, rtId, rsId);
+  stall_check();
 }
 void ac_behavior( Type_I_LOAD ){
+  preMemRead = 0;
+  rdIfId = rt;
+  rtIfId = rt;
+  rsIfId = rs;
   
-  ID_EX_regWrite = 1; //Signal RegWrite = 1
-  
-  rdId = rt;
-  
-  rsId = rs;
-  
-  rtId = rt;
-  
-  forward();
-  
-  //stall
-  rtIf_stall = rt;
-  rsIf_stall = rs;
-  
-  dataHazard();
-  //-----
-  
-  dbg_printf("rdId: %2d rdEx: %2d rdMem: %2d rtId: %2d rsId: %2d\n", rdId, rdEx, rdMem, rtId, rsId);
+  stall_check();
 }
 void ac_behavior( Type_I_LOAD_MEM ){
+  preMemRead = 1;
+  rdIfId = rt;
+  rtIfId = rt;
+  rsIfId = rs;
   
-  ID_EX_regWrite = 1; //Signal RegWrite = 1
-  
-  rdId = rt;
-  
-  rsId = rs;
-  
-  rtId = rt;
-  
-  forward();
-  
-  //stall
-  rtIf_stall = rt;
-  rsIf_stall = rs;
-  
-  dataHazard();
-  //-----
-  
-  dbg_printf("rdId: %2d rdEx: %2d rdMem: %2d rtId: %2d rsId: %2d\n", rdId, rdEx, rdMem, rtId, rsId);
+  stall_check();
 }
 void ac_behavior( Type_J ){
+  preMemRead = 0;
+  rdIfId = 0;
+  rtIfId = 0;
+  rsIfId = 0;
   
-  ID_EX_regWrite = 0; //Signal RegWrite = 0
-  
-  rdId = 0;
-  
-  rsId = 0;
-  
-  rtId = 0;
-  
-  forward();
-  
-  //stall
-  rtIf_stall = rt;
-  rsIf_stall = rs;
-  
-  dataHazard();
-  //-----
-  
-  dbg_printf("rdId: %2d rdEx: %2d rdMem: %2d rtId: %2d rsId: %2d\n", rdId, rdEx, rdMem, rtId, rsId);
+  stall_check();
 }
  
 //!Behavior called before starting simulation
@@ -273,7 +181,8 @@ void ac_behavior(begin)
 //!Behavior called after finishing simulation
 void ac_behavior(end)
 {
-  printf("$$$ Forwards: %d $$$\n", countForward);
+  pipecontrol5();
+  printf("$$$ Stalls: %d $$$\n", countStalls);
   dbg_printf("@@@ end behavior @@@\n");
 }
 
