@@ -7,5 +7,11 @@ int main(){
 	a = a + c;
 	a = a + d;
 	
+	if (a!=17){
+	  a=2;
+	} else {
+	  a=1;
+	}
+	
 	return 0;
 }

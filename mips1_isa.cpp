@@ -38,7 +38,6 @@
 #include  "mips1_isa_init.cpp"
 #include  "mips1_bhv_macros.H"
 
-
 //If you want debug information for this model, uncomment next line
 #define DEBUG_MODEL
 #include "ac_debug_model.H"
@@ -55,14 +54,21 @@ using namespace mips1_parms;
 //counters
 int countForward = 0;
 int countStalls = 0;
+int branchStalls = 0;
 
 //5-Stage Pipeline controls
 int rdIfId = 0, rdIdEx = 0, rdExMem = 0, rdMemWb = 0;
 int rtIfId = 0, rtIdEx = 0, rtExMem = 0, rtMemWb = 0;
 int rsIfId = 0, rsIdEx = 0, rsExMem = 0, rsMemWb = 0;
 bool preMemRead = 0, Id_Ex_MemRead = 0, Ex_Mem_MemRead = 0;
+bool preRegWrite = 0, Id_Ex_RegWrite = 0, Ex_Mem_RegWrite = 0, Mem_Wb_RegWrite = 0;
 
-void movepipe(){
+void movepipe()
+{
+  Mem_Wb_RegWrite = Ex_Mem_RegWrite;
+  Ex_Mem_RegWrite = Id_Ex_RegWrite;
+  Id_Ex_RegWrite = preRegWrite;
+  
   Ex_Mem_MemRead = Id_Ex_MemRead;
   Id_Ex_MemRead = preMemRead;
   
@@ -77,11 +83,27 @@ void movepipe(){
   rsMemWb = rsExMem;
   rsExMem = rsIdEx;
   rsIdEx = rsIfId;
+  
+}
+
+void forward_check(){
+  //Ex hazard
+  if (Ex_Mem_RegWrite && rdExMem != 0 && rdExMem == rsIdEx)
+    countForward++;
+  if (Ex_Mem_RegWrite && rdExMem != 0 && rdExMem == rtIdEx)
+    countForward++;
+  //Mem hazard
+  if (Mem_Wb_RegWrite && rdMemWb != 0 && !(Ex_Mem_RegWrite && rdExMem != 0) && (rdExMem != rsIdEx) && (rdMemWb == rsIdEx))
+    countForward++;
+  if (Mem_Wb_RegWrite && rdMemWb != 0 && !(Ex_Mem_RegWrite && rdExMem != 0) && (rdExMem != rtIdEx) && (rdMemWb == rtIdEx))
+    countForward++;
 }
 
 void stall_check(){
+  
   if (Id_Ex_MemRead && (rtIdEx == rsIfId || rtIdEx == rtIfId))
     countStalls++;
+  
 }
 
 void pipecontrol5(){
@@ -89,15 +111,17 @@ void pipecontrol5(){
   
   for (i = 0; i < 4; i++){
     movepipe();
+    preRegWrite = 0;
     preMemRead = 0;
     rdIfId = 0;
     rtIfId = 0;
     rsIfId = 0;
     stall_check();
+    forward_check();
   }
   
   //dbg_printf("rd: %2d %2d %2d %2d\nrt: %2d %2d %2d %2d\nrs: %2d %2d %2d %2d\n", rdIfId, rdIdEx, rdExMem, rdMemWb
-  , rtIfId, rtIdEx, rtExMem, rtMemWb, rsIfId, rsIdEx, rsExMem, rsMemWb);
+  //, rtIfId, rtIdEx, rtExMem, rtMemWb, rsIfId, rsIdEx, rsExMem, rsMemWb);
   
 }
 
@@ -110,58 +134,112 @@ void ac_behavior( instruction )
   ac_pc = npc;
   npc = ac_pc + 4;
 #endif 
-  
+  printf("2 %x din\n", (int)ac_pc);
   movepipe();
 };
  
 //! Instruction Format behavior methods.
 void ac_behavior( Type_R ){
+  //5stage
+  preRegWrite = 1;
   preMemRead = 0;
   rdIfId = rd;
   rtIfId = rt;
   rsIfId = rs;
   
   stall_check();
+  forward_check();
+  //5stage_end
+}
+void ac_behavior( Type_R_Jump ){
+  //5stage
+  preRegWrite = 1;
+  preMemRead = 0;
+  rdIfId = rd;
+  rtIfId = rt;
+  rsIfId = rs;
+  
+  stall_check();
+  forward_check();
+  branchStalls+=3;
+  //5stage_end
 }
 void ac_behavior( Type_NOP ){
+  //5stage
+  preRegWrite = 0;
   preMemRead = 0;
   rdIfId = 0;
   rtIfId = 0;
   rsIfId = 0;
   
   stall_check();
+  forward_check();
+  //5stage_end
 }
 void ac_behavior( Type_I ){
+  //5stage
+  preRegWrite = 0;
   preMemRead = 0;
   rdIfId = 0;
   rtIfId = rt;
   rsIfId = rs;
   
   stall_check();
+  forward_check();
+  //5stage_end
+}
+void ac_behavior( Type_I_STORE ){
+  //5stage
+  preRegWrite = 0;
+  preMemRead = 0;
+  rdIfId = 0;
+  rtIfId = rt;
+  rsIfId = rs;
+  
+  printf("1 %x din\n", RB[rs]+imm);
+  
+  stall_check();
+  forward_check();
+  //5stage_end
 }
 void ac_behavior( Type_I_LOAD ){
+  //5stage
+  preRegWrite = 1;
   preMemRead = 0;
   rdIfId = rt;
   rtIfId = rt;
   rsIfId = rs;
   
   stall_check();
+  forward_check();
+  //5stage_end
 }
 void ac_behavior( Type_I_LOAD_MEM ){
+  //5stage
+  preRegWrite = 1;
   preMemRead = 1;
   rdIfId = rt;
   rtIfId = rt;
   rsIfId = rs;
   
+  printf("0 %x din\n", RB[rs]+imm);
+  
   stall_check();
+  forward_check();
+  //5stage_end
 }
 void ac_behavior( Type_J ){
+  //5stage
+  preRegWrite = 0;
   preMemRead = 0;
   rdIfId = 0;
   rtIfId = 0;
   rsIfId = 0;
   
   stall_check();
+  forward_check();
+  branchStalls += 3;
+  //5stage_end
 }
  
 //!Behavior called before starting simulation
@@ -183,6 +261,8 @@ void ac_behavior(end)
 {
   pipecontrol5();
   printf("$$$ Stalls: %d $$$\n", countStalls);
+  printf("$$$ Forwards: %d $$$\n", countForward);
+  printf("$$$ BranchStalls: %d $$$\n", branchStalls);
   dbg_printf("@@@ end behavior @@@\n");
 }
 
@@ -722,7 +802,8 @@ void ac_behavior( beq )
   if( RB[rs] == RB[rt] ){
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
-#endif 
+#endif
+    branchStalls += 3;
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	
 };
@@ -734,7 +815,8 @@ void ac_behavior( bne )
   if( RB[rs] != RB[rt] ){
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
-#endif 
+#endif
+    branchStalls += 3;
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	
 };
@@ -747,6 +829,7 @@ void ac_behavior( blez )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2), 1;
 #endif 
+    branchStalls += 3;
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	
 };
@@ -759,6 +842,7 @@ void ac_behavior( bgtz )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
+    branchStalls += 3;
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	
 };
@@ -771,6 +855,7 @@ void ac_behavior( bltz )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
+    branchStalls += 3;
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	
 };
@@ -783,6 +868,7 @@ void ac_behavior( bgez )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
+    branchStalls += 3;
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	
 };
@@ -796,6 +882,7 @@ void ac_behavior( bltzal )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
+    branchStalls += 3;
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	
   dbg_printf("Return = %#x\n", ac_pc+4);
@@ -810,6 +897,7 @@ void ac_behavior( bgezal )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
+    branchStalls += 3;
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	
   dbg_printf("Return = %#x\n", ac_pc+4);

@@ -41,10 +41,12 @@ AC_ISA(mips1){
   ac_format Type_I  	= "%op:6 %rs:5 %rt:5 %imm:16:s";
   ac_format Type_I_LOAD	= "%op:6 %rs:5 %rt:5 %imm:16:s";
   ac_format Type_I_LOAD_MEM	= "%op:6 %rs:5 %rt:5 %imm:16:s";
+  ac_format Type_I_STORE = "%op:6 %rs:5 %rt:5 %imm:16:s";
   ac_format Type_J  	= "%op:6 %addr:26";
+  ac_format Type_R_Jump	= "%op:6 %rs:5 %rt:5 %rd:5 %shamt:5 %func:6";
 
   ac_instr<Type_I_LOAD_MEM> lb, lbu, lh, lhu, lw, lwl, lwr;
-  ac_instr<Type_I> sb, sh, sw, swl, swr;
+  ac_instr<Type_I_STORE> sb, sh, sw, swl, swr;
   ac_instr<Type_I_LOAD> addi, addiu, slti, sltiu, andi, ori, xori, lui;
   ac_instr<Type_R> add, addu, sub, subu, slt, sltu;
   ac_instr<Type_R> instr_and, instr_or, instr_xor, instr_nor;
@@ -53,7 +55,7 @@ AC_ISA(mips1){
   ac_instr<Type_R> mult, multu, div, divu;
   ac_instr<Type_R> mfhi, mthi, mflo, mtlo;
   ac_instr<Type_J> j, jal;
-  ac_instr<Type_R> jr, jalr;
+  ac_instr<Type_R_Jump> jr, jalr;
   ac_instr<Type_I> beq, bne, blez, bgtz, bltz, bgez, bltzal, bgezal;
   ac_instr<Type_R> sys_call, instr_break;
 
