@@ -37,6 +37,7 @@
 #include  "mips1_isa.H"
 #include  "mips1_isa_init.cpp"
 #include  "mips1_bhv_macros.H"
+#include  <map>
 
 //If you want debug information for this model, uncomment next line
 #define DEBUG_MODEL
@@ -62,6 +63,11 @@ int rtIfId = 0, rtIdEx = 0, rtExMem = 0, rtMemWb = 0;
 int rsIfId = 0, rsIdEx = 0, rsExMem = 0, rsMemWb = 0;
 bool preMemRead = 0, Id_Ex_MemRead = 0, Ex_Mem_MemRead = 0;
 bool preRegWrite = 0, Id_Ex_RegWrite = 0, Ex_Mem_RegWrite = 0, Mem_Wb_RegWrite = 0;
+
+//Dynamic Branch Prediction
+std::map<int,int> bp;
+std::map<int,int>::iterator it;
+int dynamicStalls = 0;
 
 void movepipe()
 {
@@ -161,7 +167,6 @@ void ac_behavior( Type_R_Jump ){
   
   stall_check();
   forward_check();
-  branchStalls+=3;
   //5stage_end
 }
 void ac_behavior( Type_NOP ){
@@ -187,6 +192,12 @@ void ac_behavior( Type_I ){
   stall_check();
   forward_check();
   //5stage_end
+  
+  //Verify if branch exist in hash
+  it = bp.find((int)ac_pc);
+  if(it == bp.end()){
+    bp.insert(std::pair<int,int>((int) ac_pc, 0));
+  }
 }
 void ac_behavior( Type_I_STORE ){
   //5stage
@@ -238,7 +249,6 @@ void ac_behavior( Type_J ){
   
   stall_check();
   forward_check();
-  branchStalls += 3;
   //5stage_end
 }
  
@@ -263,6 +273,7 @@ void ac_behavior(end)
   printf("$$$ Stalls: %d $$$\n", countStalls);
   printf("$$$ Forwards: %d $$$\n", countForward);
   printf("$$$ BranchStalls: %d $$$\n", branchStalls);
+  printf("$$$ DynamicStalls: %d $$$\n", dynamicStalls);
   dbg_printf("@@@ end behavior @@@\n");
 }
 
@@ -804,8 +815,21 @@ void ac_behavior( beq )
     npc = ac_pc + (imm<<2);
 #endif
     branchStalls += 3;
+    if (bp[(int)ac_pc] < 2){
+      dynamicStalls += 3;
+      ++bp[(int)ac_pc];
+    } else if (bp[(int)ac_pc] == 2){
+      ++bp[(int)ac_pc];
+    }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
-  }	
+  } else {
+    if (bp[(int)ac_pc] > 1){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]--;
+    } else if (bp[(int)ac_pc] == 1){
+      bp[(int)ac_pc]--;
+    }
+  }
 };
 
 //!Instruction bne behavior method.
@@ -817,7 +841,20 @@ void ac_behavior( bne )
     npc = ac_pc + (imm<<2);
 #endif
     branchStalls += 3;
+     if (bp[(int)ac_pc] < 2){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]++;
+    } else if (bp[(int)ac_pc] == 2){
+      bp[(int)ac_pc]++;
+    }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  } else {
+    if (bp[(int)ac_pc] > 1){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]--;
+    } else if (bp[(int)ac_pc] == 1){
+      bp[(int)ac_pc]--;
+    }
   }	
 };
 
@@ -830,7 +867,20 @@ void ac_behavior( blez )
     npc = ac_pc + (imm<<2), 1;
 #endif 
     branchStalls += 3;
+     if (bp[(int)ac_pc] < 2){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]++;
+    } else if (bp[(int)ac_pc] == 2){
+      bp[(int)ac_pc]++;
+    }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  } else {
+    if (bp[(int)ac_pc] > 1){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]--;
+    } else if (bp[(int)ac_pc] == 1){
+      bp[(int)ac_pc]--;
+    }
   }	
 };
 
@@ -843,7 +893,20 @@ void ac_behavior( bgtz )
     npc = ac_pc + (imm<<2);
 #endif 
     branchStalls += 3;
+     if (bp[(int)ac_pc] < 2){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]++;
+    } else if (bp[(int)ac_pc] == 2){
+      bp[(int)ac_pc]++;
+    }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  } else {
+    if (bp[(int)ac_pc] > 1){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]--;
+    } else if (bp[(int)ac_pc] == 1){
+      bp[(int)ac_pc]--;
+    }
   }	
 };
 
@@ -856,7 +919,20 @@ void ac_behavior( bltz )
     npc = ac_pc + (imm<<2);
 #endif 
     branchStalls += 3;
+     if (bp[(int)ac_pc] < 2){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]++;
+    } else if (bp[(int)ac_pc] == 2){
+      bp[(int)ac_pc]++;
+    }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  } else {
+    if (bp[(int)ac_pc] > 1){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]--;
+    } else if (bp[(int)ac_pc] == 1){
+      bp[(int)ac_pc]--;
+    }
   }	
 };
 
@@ -869,7 +945,20 @@ void ac_behavior( bgez )
     npc = ac_pc + (imm<<2);
 #endif 
     branchStalls += 3;
+     if (bp[(int)ac_pc] < 2){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]++;
+    } else if (bp[(int)ac_pc] == 2){
+      bp[(int)ac_pc]++;
+    }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  } else {
+    if (bp[(int)ac_pc] > 1){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]--;
+    } else if (bp[(int)ac_pc] == 1){
+      bp[(int)ac_pc]--;
+    }
   }	
 };
 
@@ -883,7 +972,20 @@ void ac_behavior( bltzal )
     npc = ac_pc + (imm<<2);
 #endif 
     branchStalls += 3;
+     if (bp[(int)ac_pc] < 2){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]++;
+    } else if (bp[(int)ac_pc] == 2){
+      bp[(int)ac_pc]++;
+    }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  } else {
+    if (bp[(int)ac_pc] > 1){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]--;
+    } else if (bp[(int)ac_pc] == 1){
+      bp[(int)ac_pc]--;
+    }
   }	
   dbg_printf("Return = %#x\n", ac_pc+4);
 };
@@ -898,7 +1000,20 @@ void ac_behavior( bgezal )
     npc = ac_pc + (imm<<2);
 #endif 
     branchStalls += 3;
+     if (bp[(int)ac_pc] < 2){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]++;
+    } else if (bp[(int)ac_pc] == 2){
+      bp[(int)ac_pc]++;
+    }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  } else {
+    if (bp[(int)ac_pc] > 1){
+      dynamicStalls += 3;
+      bp[(int)ac_pc]--;
+    } else if (bp[(int)ac_pc] == 1){
+      bp[(int)ac_pc]--;
+    }
   }	
   dbg_printf("Return = %#x\n", ac_pc+4);
 };
