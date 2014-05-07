@@ -38,6 +38,7 @@
 #include  "mips1_isa_init.cpp"
 #include  "mips1_bhv_macros.H"
 #include  <map>
+#include  <vector>
 
 //If you want debug information for this model, uncomment next line
 #define DEBUG_MODEL
@@ -52,10 +53,19 @@
 // mips1-specific datatypes
 using namespace mips1_parms;
 
-//counters
+//counters 5-Stage
 int countForward = 0;
 int countStalls = 0;
 int branchStalls = 0;
+
+//counters 7-Stage
+int countForward7 = 0;
+int countStalls7 = 0;
+int branchStalls7 = 0;
+
+//7-Stage Pipeline controls
+std::vector <std::vector <int> > stage7 (3,std::vector(7,0));
+std::vector <std::vector <bool> > stage7ctrl (2,std::vector(7,0));
 
 //5-Stage Pipeline controls
 int rdIfId = 0, rdIdEx = 0, rdExMem = 0, rdMemWb = 0;
@@ -68,6 +78,7 @@ bool preRegWrite = 0, Id_Ex_RegWrite = 0, Ex_Mem_RegWrite = 0, Mem_Wb_RegWrite =
 std::map<int,int> bp;
 std::map<int,int>::iterator it;
 int dynamicStalls = 0;
+int dynamicStalls7 = 0;
 
 void movepipe()
 {
@@ -92,23 +103,42 @@ void movepipe()
   
 }
 
+void movepipe7()
+{
+  stage7[0].pop_back();//Rd
+  stage7[1].pop_back();//Rt
+  stage7[2].pop_back();//Rs
+  
+  stage7[0].insert(stage7[0].begin(), 0);//Rd
+  stage7[1].insert(stage7[1].begin(), 0);//Rt
+  stage7[2].insert(stage7[2].begin(), 0);//Rs
+  
+  stage7ctrl[0].pop_back();//RegWrite
+  stage7ctrl[1].pop_back();//MemRead
+  
+  stage7ctrl[0].insert(stage7ctrl[0].begin(), 0);//RegWrite
+  stage7ctrl[1].insert(stage7ctrl[1].begin(), 0);//MemRead
+}
+
 void forward_check(){
   //Ex hazard
-  if (Ex_Mem_RegWrite && rdExMem != 0 && rdExMem == rsIdEx)
+  if (Ex_Mem_RegWrite && rdExMem != 0 && (rdExMem == rsIdEx || rdExMem == rtIdEx))
     countForward++;
-  if (Ex_Mem_RegWrite && rdExMem != 0 && rdExMem == rtIdEx)
-    countForward++;
+  if (stage7ctrl[0][3] && stage7[0][3] != 0 && (stage7[0][3] == stage7[2][2] || stage7[0][2] == stage7[1][2]))
+    countForward7++;
+  //Mt hazard
   //Mem hazard
-  if (Mem_Wb_RegWrite && rdMemWb != 0 && !(Ex_Mem_RegWrite && rdExMem != 0) && (rdExMem != rsIdEx) && (rdMemWb == rsIdEx))
-    countForward++;
-  if (Mem_Wb_RegWrite && rdMemWb != 0 && !(Ex_Mem_RegWrite && rdExMem != 0) && (rdExMem != rtIdEx) && (rdMemWb == rtIdEx))
-    countForward++;
+  if (Mem_Wb_RegWrite && rdMemWb != 0 && !(Ex_Mem_RegWrite && rdExMem != 0) && ((rdExMem != rsIdEx && rdMemWb == rsIdEx) || (rdExMem != rtIdEx && rdMemWb == rtIdEx)))
+    countForward+=2;
 }
 
 void stall_check(){
   
   if (Id_Ex_MemRead && (rtIdEx == rsIfId || rtIdEx == rtIfId))
     countStalls++;
+  
+  if (stage7ctrl[1][2] && (stage7[1][2] == stage7[2][1] || stage7[1][2] == stage7[1][1]))
+    countStalls7+=2;
   
 }
 
@@ -142,6 +172,7 @@ void ac_behavior( instruction )
 #endif 
   printf("2 %x din\n", (int)ac_pc);
   movepipe();
+  movepipe7();
 };
  
 //! Instruction Format behavior methods.
@@ -152,6 +183,13 @@ void ac_behavior( Type_R ){
   rdIfId = rd;
   rtIfId = rt;
   rsIfId = rs;
+  
+  //7stage
+  stage7ctrl[0][0] = 1;
+  stage7ctrl[1][0] = 0;
+  stage7[0][0] = rd;
+  stage7[1][0] = rt;
+  stage7[2][0] = rs;
   
   stall_check();
   forward_check();
@@ -165,6 +203,13 @@ void ac_behavior( Type_R_Jump ){
   rtIfId = rt;
   rsIfId = rs;
   
+  //7stage
+  stage7ctrl[0][0] = 1;
+  stage7ctrl[1][0] = 0;
+  stage7[0][0] = rd;
+  stage7[1][0] = rt;
+  stage7[2][0] = rs;
+  
   stall_check();
   forward_check();
   //5stage_end
@@ -177,6 +222,13 @@ void ac_behavior( Type_NOP ){
   rtIfId = 0;
   rsIfId = 0;
   
+  //7stage
+  stage7ctrl[0][0] = 0;
+  stage7ctrl[1][0] = 0;
+  stage7[0][0] = 0;
+  stage7[1][0] = 0;
+  stage7[2][0] = 0;
+  
   stall_check();
   forward_check();
   //5stage_end
@@ -188,6 +240,13 @@ void ac_behavior( Type_I ){
   rdIfId = 0;
   rtIfId = rt;
   rsIfId = rs;
+  
+  //7stage
+  stage7ctrl[0][0] = 0;
+  stage7ctrl[1][0] = 0;
+  stage7[0][0] = 0;
+  stage7[1][0] = rt;
+  stage7[2][0] = rs;
   
   stall_check();
   forward_check();
@@ -207,6 +266,13 @@ void ac_behavior( Type_I_STORE ){
   rtIfId = rt;
   rsIfId = rs;
   
+  //7stage
+  stage7ctrl[0][0] = 0;
+  stage7ctrl[1][0] = 0;
+  stage7[0][0] = 0;
+  stage7[1][0] = rt;
+  stage7[2][0] = rs;
+  
   printf("1 %x din\n", RB[rs]+imm);
   
   stall_check();
@@ -221,6 +287,13 @@ void ac_behavior( Type_I_LOAD ){
   rtIfId = rt;
   rsIfId = rs;
   
+  //7stage
+  stage7ctrl[0][0] = 1;
+  stage7ctrl[1][0] = 0;
+  stage7[0][0] = rt;
+  stage7[1][0] = rt;
+  stage7[2][0] = rs;
+  
   stall_check();
   forward_check();
   //5stage_end
@@ -232,6 +305,13 @@ void ac_behavior( Type_I_LOAD_MEM ){
   rdIfId = rt;
   rtIfId = rt;
   rsIfId = rs;
+  
+  //7stage
+  stage7ctrl[0][0] = 1;
+  stage7ctrl[1][0] = 1;
+  stage7[0][0] = rt;
+  stage7[1][0] = rt;
+  stage7[2][0] = rs;
   
   printf("0 %x din\n", RB[rs]+imm);
   
@@ -246,6 +326,13 @@ void ac_behavior( Type_J ){
   rdIfId = 0;
   rtIfId = 0;
   rsIfId = 0;
+  
+  //7stage
+  stage7ctrl[0][0] = 0;
+  stage7ctrl[1][0] = 0;
+  stage7[0][0] = 0;
+  stage7[1][0] = 0;
+  stage7[2][0] = 0;
   
   stall_check();
   forward_check();
@@ -270,10 +357,19 @@ void ac_behavior(begin)
 void ac_behavior(end)
 {
   pipecontrol5();
+  printf("--- Pipeline 5 ---");
   printf("$$$ Stalls: %d $$$\n", countStalls);
   printf("$$$ Forwards: %d $$$\n", countForward);
   printf("$$$ BranchStalls: %d $$$\n", branchStalls);
   printf("$$$ DynamicStalls: %d $$$\n", dynamicStalls);
+  
+  pipecontrol7();
+  printf("--- Pipeline 7 ---");
+  printf("$$$ Stalls: %d $$$\n", countStalls7);
+  printf("$$$ Forwards: %d $$$\n", countForward7);
+  printf("$$$ BranchStalls: %d $$$\n", branchStalls7);
+  printf("$$$ DynamicStalls: %d $$$\n", dynamicStalls7);
+  
   dbg_printf("@@@ end behavior @@@\n");
 }
 
