@@ -64,8 +64,8 @@ int countStalls7 = 0;
 int branchStalls7 = 0;
 
 //7-Stage Pipeline controls
-std::vector <std::vector <int> > stage7 (3,std::vector(7,0));
-std::vector <std::vector <bool> > stage7ctrl (2,std::vector(7,0));
+std::vector <std::vector <int> > stage7 (3,std::vector<int>(7,0));
+std::vector <std::vector <bool> > stage7ctrl (2,std::vector<bool>(7,0));
 
 //5-Stage Pipeline controls
 int rdIfId = 0, rdIdEx = 0, rdExMem = 0, rdMemWb = 0;
@@ -123,15 +123,42 @@ void movepipe7()
 }
 
 void forward_check(){
-  //Ex hazard
-  if (Ex_Mem_RegWrite && rdExMem != 0 && (rdExMem == rsIdEx || rdExMem == rtIdEx))
-    countForward++;
-  if (stage7ctrl[0][3] && stage7[0][3] != 0 && (stage7[0][3] == stage7[2][2] || stage7[0][2] == stage7[1][2]))
-    countForward7++;
-  //Mt hazard
-  //Mem hazard
-  if (Mem_Wb_RegWrite && rdMemWb != 0 && !(Ex_Mem_RegWrite && rdExMem != 0) && ((rdExMem != rsIdEx && rdMemWb == rsIdEx) || (rdExMem != rtIdEx && rdMemWb == rtIdEx)))
+  int flag=0;
+  int flag7=0;
+  //Rs
+  if (Ex_Mem_RegWrite && rdExMem != 0 && rdExMem == rsIdEx){//Ex hazard
     countForward+=2;
+    flag=2;
+  } else if (Mem_Wb_RegWrite && rdMemWb != 0 && rdMemWb == rsIdEx) {//Mem hazard
+    countForward++;
+    flag=1;
+  }
+  //Rt
+  if (Ex_Mem_RegWrite && rdExMem != 0 && rdExMem == rtIdEx){//Ex hazard
+    if (flag == 0) countForward+=2; else if (flag == 1) countForward++;
+  } else if (Mem_Wb_RegWrite && rdMemWb != 0 && rdMemWb == rtIdEx) {//Mem hazard
+    if (flag == 0) countForward++;
+  }
+  
+  //Rs7
+  if (stage7ctrl[0][3] && stage7[0][3] != 0 && stage7[0][3] == stage7[2][2]){//Ex hazard
+    countForward7+=3;
+    flag7=3;
+  } else if (stage7ctrl[0][4] && stage7[0][4] != 0 && stage7[0][4] == stage7[2][2]){//Mt hazard
+    countForward7+=2;
+    flag7=2;
+  } else if (stage7ctrl[0][5] && stage7[0][5] != 0 && stage7[0][5] == stage7[2][2]){//Mem hazard
+    countForward7+=1;
+    flag7=1;
+  }
+  //Rt7
+  if (stage7ctrl[0][3] && stage7[0][3] != 0 && stage7[0][3] == stage7[1][2]){//Ex hazard
+    if (flag7 == 0) countForward7+=3; else if (flag7 == 1) countForward7+=2; else if (flag7 == 2) countForward7+=1;
+  } else if (stage7ctrl[0][4] && stage7[0][4] != 0 && stage7[0][4] == stage7[1][2]){//Mt hazard
+    if (flag7 == 0) countForward7+=2; else if (flag7 == 1) countForward7+=1;
+  } else if (stage7ctrl[0][5] && stage7[0][5] != 0 && stage7[0][5] == stage7[1][2]){//Mem hazard
+    if (flag7 == 0) countForward7+=1;
+  }
 }
 
 void stall_check(){
@@ -145,6 +172,25 @@ void stall_check(){
 }
 
 void pipecontrol5(){
+  int i;
+  
+  for (i = 0; i < 4; i++){
+    movepipe();
+    preRegWrite = 0;
+    preMemRead = 0;
+    rdIfId = 0;
+    rtIfId = 0;
+    rsIfId = 0;
+    stall_check();
+    forward_check();
+  }
+  
+  //dbg_printf("rd: %2d %2d %2d %2d\nrt: %2d %2d %2d %2d\nrs: %2d %2d %2d %2d\n", rdIfId, rdIdEx, rdExMem, rdMemWb
+  //, rtIfId, rtIdEx, rtExMem, rtMemWb, rsIfId, rsIdEx, rsExMem, rsMemWb);
+  
+}
+
+void pipecontrol7(){
   int i;
   
   for (i = 0; i < 4; i++){
