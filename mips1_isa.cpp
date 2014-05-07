@@ -78,6 +78,8 @@ bool preRegWrite = 0, Id_Ex_RegWrite = 0, Ex_Mem_RegWrite = 0, Mem_Wb_RegWrite =
 std::map<int,int> bp;
 std::map<int,int>::iterator it;
 int dynamicStalls = 0;
+std::map<int,int> bp7;
+std::map<int,int>::iterator it7;
 int dynamicStalls7 = 0;
 
 void movepipe()
@@ -911,6 +913,7 @@ void ac_behavior( beq )
     npc = ac_pc + (imm<<2);
 #endif
     branchStalls += 3;
+    branchStalls7 += 4;
     if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
       ++bp[(int)ac_pc];
@@ -937,6 +940,7 @@ void ac_behavior( bne )
     npc = ac_pc + (imm<<2);
 #endif
     branchStalls += 3;
+    branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
       bp[(int)ac_pc]++;
@@ -963,6 +967,7 @@ void ac_behavior( blez )
     npc = ac_pc + (imm<<2), 1;
 #endif 
     branchStalls += 3;
+    branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
       bp[(int)ac_pc]++;
@@ -989,6 +994,7 @@ void ac_behavior( bgtz )
     npc = ac_pc + (imm<<2);
 #endif 
     branchStalls += 3;
+    branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
       bp[(int)ac_pc]++;
@@ -1015,6 +1021,7 @@ void ac_behavior( bltz )
     npc = ac_pc + (imm<<2);
 #endif 
     branchStalls += 3;
+    branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
       bp[(int)ac_pc]++;
@@ -1041,6 +1048,7 @@ void ac_behavior( bgez )
     npc = ac_pc + (imm<<2);
 #endif 
     branchStalls += 3;
+    branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
       bp[(int)ac_pc]++;
@@ -1068,6 +1076,7 @@ void ac_behavior( bltzal )
     npc = ac_pc + (imm<<2);
 #endif 
     branchStalls += 3;
+    branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
       bp[(int)ac_pc]++;
@@ -1096,6 +1105,7 @@ void ac_behavior( bgezal )
     npc = ac_pc + (imm<<2);
 #endif 
     branchStalls += 3;
+    branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
       bp[(int)ac_pc]++;
