@@ -104,25 +104,22 @@ void movepipe()
   rsMemWb = rsExMem;
   rsExMem = rsIdEx;
   rsIdEx = rsIfId;
-  
-}
 
-void movepipe7()
-{
   stage7[0].pop_back();//Rd
   stage7[1].pop_back();//Rt
   stage7[2].pop_back();//Rs
-  
+
   stage7[0].insert(stage7[0].begin(), 0);//Rd
   stage7[1].insert(stage7[1].begin(), 0);//Rt
   stage7[2].insert(stage7[2].begin(), 0);//Rs
-  
+
   stage7ctrl[0].pop_back();//RegWrite
   stage7ctrl[1].pop_back();//MemRead
-  
+
   stage7ctrl[0].insert(stage7ctrl[0].begin(), 0);//RegWrite
   stage7ctrl[1].insert(stage7ctrl[1].begin(), 0);//MemRead
 }
+
 
 void forward_check(){
   int flag=0;
@@ -178,26 +175,7 @@ void stall_check(){
 void pipecontrol5(){
   int i;
   
-  for (i = 0; i < 4; i++){
-    movepipe();
-    preRegWrite = 0;
-    preMemRead = 0;
-    rdIfId = 0;
-    rtIfId = 0;
-    rsIfId = 0;
-    stall_check();
-    forward_check();
-  }
-  
-  //dbg_printf("rd: %2d %2d %2d %2d\nrt: %2d %2d %2d %2d\nrs: %2d %2d %2d %2d\n", rdIfId, rdIdEx, rdExMem, rdMemWb
-  //, rtIfId, rtIdEx, rtExMem, rtMemWb, rsIfId, rsIdEx, rsExMem, rsMemWb);
-  
-}
-
-void pipecontrol7(){
-  int i;
-  
-  for (i = 0; i < 4; i++){
+  for (i = 0; i < 6; i++){
     movepipe();
     preRegWrite = 0;
     preMemRead = 0;
@@ -224,7 +202,6 @@ void ac_behavior( instruction )
 #endif 
   printf("2 %x din\n", (int)ac_pc);
   movepipe();
-  movepipe7();
 };
  
 //! Instruction Format behavior methods.
@@ -416,19 +393,17 @@ void ac_behavior(begin)
 void ac_behavior(end)
 {
   pipecontrol5();
-  printf("--- Pipeline 5 ---");
+  printf("--- Pipeline 5 ---\n");
   printf("$$$ Stalls: %d $$$\n", countStalls);
   printf("$$$ Forwards: %d $$$\n", countForward);
   printf("$$$ BranchStalls: %d $$$\n", branchStalls);
 
-  
-  pipecontrol7();
-  printf("--- Pipeline 7 ---");
+  printf("--- Pipeline 7 ---\n");
   printf("$$$ Stalls: %d $$$\n", countStalls7);
   printf("$$$ Forwards: %d $$$\n", countForward7);
   printf("$$$ BranchStalls: %d $$$\n", branchStalls7);
 
-  printf("--- Branch Prediction ---");
+  printf("--- Branch Prediction ---\n");
   printf("$$$ DynamicStalls1: %d $$$\n", dynamicStalls);
   printf("$$$ DynamicStalls1 - 7: %d $$$\n", dynamicStalls7);
   printf("$$$ DynamicStalls2: %d $$$\n", dynamicStalls2);
