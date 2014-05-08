@@ -168,7 +168,8 @@ void stall_check(){
   
   if (stage7ctrl[1][2] && (stage7[1][2] == stage7[2][1] || stage7[1][2] == stage7[1][1]))
     countStalls7+=2;
-  
+  if (stage7ctrl[1][2] && (stage7[1][2] == stage7[2][0] || stage7[1][2] == stage7[1][0]))
+    countStalls7++;
 }
 
 void pipecontrol5(){
