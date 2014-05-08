@@ -42,7 +42,7 @@
 #include  <stdio.h>
 
 //If you want debug information for this model, uncomment next line
-#define DEBUG_MODEL
+//#define DEBUG_MODEL
 #include "ac_debug_model.H"
 
 
@@ -90,9 +90,11 @@ int dynamicStalls = 0;
 int dynamicStalls7 = 0;
 std::map<int,std::vector<int> > bhist;
 std::map<int,std::vector<int> >::iterator ithist;
+std::map<int,std::vector<int> > breg;
+std::map<int,std::vector<int> >::iterator itreg;
 int dynamicStalls2 = 0;
 int dynamicStalls27 = 0;
-int predict;
+int predict, aux1, aux2;
 void movepipe()
 {
   Mem_Wb_RegWrite = Ex_Mem_RegWrite;
@@ -332,8 +334,13 @@ void ac_behavior( Type_I ){
   ithist = bhist.find((int)ac_pc);
   if(ithist == bhist.end()){
       bhist.insert(std::pair<int, std::vector<int> >((int)ac_pc, std::vector<int> (4, 0)));
+      breg.insert(std::pair<int, std::vector<int> >((int)ac_pc, std::vector<int> (2, 0)));
+      predict = 0;
   } else {
-      predict = bhist[(int)ac_pc][bp[(int)ac_pc]];
+      aux1 = breg[(int)ac_pc][0]*10;
+      aux1 += breg[(int)ac_pc][1];
+      if (aux1==0) aux2=0; else if (aux1==1) aux2=1; else if (aux1==10) aux2=2; else aux2=3;
+      predict = bhist[(int)ac_pc][aux2];
   }
 }
 void ac_behavior( Type_I_STORE ){
@@ -461,7 +468,7 @@ void ac_behavior(begin)
   hi = 0;
   lo = 0;
 
-  f = fopen("out.din", "w");
+  f = fopen("/tmp/out.din", "w");
 }
 
 //!Behavior called after finishing simulation
@@ -1027,10 +1034,14 @@ void ac_behavior( beq )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif
-    if (predict == 0){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 1;
+    if (predict == 0 || predict == 1){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][aux2] += 1;
+    } else if (predict == 2){
+        bhist[(int)ac_pc][aux2] += 1;
     }
 
     branchStalls += 3;
@@ -1044,10 +1055,14 @@ void ac_behavior( beq )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
-    if (predict == 1){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 0;
+    if (predict == 2 || predict == 3){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][aux2] -= 1;
+    } else if (predict == 1){
+        bhist[(int)ac_pc][aux2] -= 1;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1067,10 +1082,14 @@ void ac_behavior( bne )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif
-    if (predict == 0){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 1;
+    if (predict == 0 || predict == 1){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][aux2] += 1;
+    } else if (predict == 2){
+        bhist[(int)ac_pc][aux2] += 1;
     }
     branchStalls += 3;
     branchStalls7 += 4;
@@ -1083,10 +1102,14 @@ void ac_behavior( bne )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
-    if (predict == 1){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 0;
+    if (predict == 2 || predict == 3){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][aux2] -= 1;
+    } else if (predict == 1){
+        bhist[(int)ac_pc][aux2] -= 1;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1106,11 +1129,16 @@ void ac_behavior( blez )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2), 1;
 #endif
-    if (predict == 0){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 1;
+    if (predict == 0 || predict == 1){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][aux2] += 1;
+    } else if (predict == 2){
+        bhist[(int)ac_pc][aux2] += 1;
     }
+    
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1122,10 +1150,14 @@ void ac_behavior( blez )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
-    if (predict == 1){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 0;
+    if (predict == 2 || predict == 3){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][aux2] -= 1;
+    } else if (predict == 1){
+        bhist[(int)ac_pc][aux2] -= 1;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1145,11 +1177,16 @@ void ac_behavior( bgtz )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif
-    if (predict == 0){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 1;
+    if (predict == 0 || predict == 1){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][aux2] += 1;
+    } else if (predict == 2){
+        bhist[(int)ac_pc][aux2] += 1;
     }
+    
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1161,10 +1198,14 @@ void ac_behavior( bgtz )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
-    if (predict == 1){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 0;
+    if (predict == 2 || predict == 3){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][aux2] -= 1;
+    } else if (predict == 1){
+        bhist[(int)ac_pc][aux2] -= 1;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1184,11 +1225,16 @@ void ac_behavior( bltz )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif
-    if (predict == 0){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 1;
+    if (predict == 0 || predict == 1){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][aux2] += 1;
+    } else if (predict == 2){
+        bhist[(int)ac_pc][aux2] += 1;
     }
+    
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1200,10 +1246,14 @@ void ac_behavior( bltz )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
-    if (predict == 1){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 0;
+    if (predict == 2 || predict == 3){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][aux2] -= 1;
+    } else if (predict == 1){
+        bhist[(int)ac_pc][aux2] -= 1;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1223,11 +1273,16 @@ void ac_behavior( bgez )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif
-    if (predict == 0){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 1;
+    if (predict == 0 || predict == 1){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][aux2] += 1;
+    } else if (predict == 2){
+        bhist[(int)ac_pc][aux2] += 1;
     }
+    
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1239,10 +1294,14 @@ void ac_behavior( bgez )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
-    if (predict == 1){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 0;
+    if (predict == 2 || predict == 3){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][aux2] -= 1;
+    } else if (predict == 1){
+        bhist[(int)ac_pc][aux2] -= 1;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1263,11 +1322,16 @@ void ac_behavior( bltzal )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif
-    if (predict == 0){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 1;
+    if (predict == 0 || predict == 1){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][aux2] += 1;
+    } else if (predict == 2){
+        bhist[(int)ac_pc][aux2] += 1;
     }
+    
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1279,10 +1343,14 @@ void ac_behavior( bltzal )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
-    if (predict == 1){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 0;
+    if (predict == 2 || predict == 3){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][aux2] -= 1;
+    } else if (predict == 1){
+        bhist[(int)ac_pc][aux2] -= 1;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1304,11 +1372,16 @@ void ac_behavior( bgezal )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif
-    if (predict == 0){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 1;
+    if (predict == 0 || predict == 1){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][aux2] += 1;
+    } else if (predict == 2){
+        bhist[(int)ac_pc][aux2] += 1;
     }
+    
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1320,10 +1393,14 @@ void ac_behavior( bgezal )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
-    if (predict == 1){
+    breg[(int)ac_pc][0] = breg[(int)ac_pc][1];
+    breg[(int)ac_pc][1] = 0;
+    if (predict == 2 || predict == 3){
         dynamicStalls2 += 3;
         dynamicStalls27 += 4;
-        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][aux2] -= 1;
+    } else if (predict == 1){
+        bhist[(int)ac_pc][aux2] -= 1;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
