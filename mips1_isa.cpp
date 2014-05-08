@@ -39,6 +39,7 @@
 #include  "mips1_bhv_macros.H"
 #include  <map>
 #include  <vector>
+#include  <stdio.h>
 
 //If you want debug information for this model, uncomment next line
 #define DEBUG_MODEL
@@ -52,6 +53,9 @@
 // 'using namespace' statement to allow access to all
 // mips1-specific datatypes
 using namespace mips1_parms;
+
+//dinero
+FILE *f;
 
 //counters 5-Stage
 int countForward = 0;
@@ -205,7 +209,7 @@ void ac_behavior( instruction )
   ac_pc = npc;
   npc = ac_pc + 4;
 #endif 
-  printf("2 %x din\n", (int)ac_pc);
+  fprintf(f,"2 %x din\n", (int)ac_pc);
   movepipe();
 
   //superscalar
@@ -357,7 +361,7 @@ void ac_behavior( Type_I_STORE ){
   stage7[1][0] = rt;
   stage7[2][0] = rs;
   
-  printf("1 %x din\n", RB[rs]+imm);
+  fprintf(f,"1 %x din\n", RB[rs]+imm);
   
   stall_check();
   forward_check();
@@ -413,7 +417,7 @@ void ac_behavior( Type_I_LOAD_MEM ){
   stage7[1][0] = rt;
   stage7[2][0] = rs;
   
-  printf("0 %x din\n", RB[rs]+imm);
+  fprintf(f,"0 %x din\n", RB[rs]+imm);
   
   stall_check();
   forward_check();
@@ -456,6 +460,8 @@ void ac_behavior(begin)
     RB[regNum] = 0;
   hi = 0;
   lo = 0;
+
+  f = fopen("out.din", "w");
 }
 
 //!Behavior called after finishing simulation
