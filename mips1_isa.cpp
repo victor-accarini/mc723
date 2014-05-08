@@ -78,10 +78,12 @@ bool preRegWrite = 0, Id_Ex_RegWrite = 0, Ex_Mem_RegWrite = 0, Mem_Wb_RegWrite =
 std::map<int,int> bp;
 std::map<int,int>::iterator it;
 int dynamicStalls = 0;
-std::map<int,int> bp7;
-std::map<int,int>::iterator it7;
 int dynamicStalls7 = 0;
-
+std::map<int,int> bhist;
+std::map<int,int>::iterator ithist;
+int dynamicStalls2 = 0;
+int dynamicStalls27 = 0;
+int predict;
 void movepipe()
 {
   Mem_Wb_RegWrite = Ex_Mem_RegWrite;
@@ -170,6 +172,7 @@ void stall_check(){
     countStalls7+=2;
   if (stage7ctrl[1][2] && (stage7[1][2] == stage7[2][0] || stage7[1][2] == stage7[1][0]))
     countStalls7++;
+
 }
 
 void pipecontrol5(){
@@ -306,6 +309,13 @@ void ac_behavior( Type_I ){
   if(it == bp.end()){
     bp.insert(std::pair<int,int>((int) ac_pc, 0));
   }
+
+  ithist = bhist.find((int)ac_pc);
+  if(ithist == bhist.end()){
+      bhist.insert(std::pair<int, std::vector<int> >((int)ac_pc, std::vector<int> (4, 0)));
+  } else {
+      predict = bhist[(int)ac_pc][bp[(int)ac_pc]];
+  }
 }
 void ac_behavior( Type_I_STORE ){
   //5stage
@@ -410,14 +420,19 @@ void ac_behavior(end)
   printf("$$$ Stalls: %d $$$\n", countStalls);
   printf("$$$ Forwards: %d $$$\n", countForward);
   printf("$$$ BranchStalls: %d $$$\n", branchStalls);
-  printf("$$$ DynamicStalls: %d $$$\n", dynamicStalls);
+
   
   pipecontrol7();
   printf("--- Pipeline 7 ---");
   printf("$$$ Stalls: %d $$$\n", countStalls7);
   printf("$$$ Forwards: %d $$$\n", countForward7);
   printf("$$$ BranchStalls: %d $$$\n", branchStalls7);
-  printf("$$$ DynamicStalls: %d $$$\n", dynamicStalls7);
+
+  printf("--- Branch Prediction ---");
+  printf("$$$ DynamicStalls1: %d $$$\n", dynamicStalls);
+  printf("$$$ DynamicStalls1 - 7: %d $$$\n", dynamicStalls7);
+  printf("$$$ DynamicStalls2: %d $$$\n", dynamicStalls2);
+  printf("$$$ DynamicStalls2 - 7: %d $$$\n", dynamicStalls27);
   
   dbg_printf("@@@ end behavior @@@\n");
 }
@@ -963,6 +978,7 @@ void ac_behavior( beq )
     branchStalls7 += 4;
     if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       ++bp[(int)ac_pc];
     } else if (bp[(int)ac_pc] == 2){
       ++bp[(int)ac_pc];
@@ -971,6 +987,7 @@ void ac_behavior( beq )
   } else {
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]--;
     } else if (bp[(int)ac_pc] == 1){
       bp[(int)ac_pc]--;
@@ -990,6 +1007,7 @@ void ac_behavior( bne )
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]++;
     } else if (bp[(int)ac_pc] == 2){
       bp[(int)ac_pc]++;
@@ -998,6 +1016,7 @@ void ac_behavior( bne )
   } else {
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]--;
     } else if (bp[(int)ac_pc] == 1){
       bp[(int)ac_pc]--;
@@ -1017,6 +1036,7 @@ void ac_behavior( blez )
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]++;
     } else if (bp[(int)ac_pc] == 2){
       bp[(int)ac_pc]++;
@@ -1025,6 +1045,7 @@ void ac_behavior( blez )
   } else {
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]--;
     } else if (bp[(int)ac_pc] == 1){
       bp[(int)ac_pc]--;
@@ -1044,6 +1065,7 @@ void ac_behavior( bgtz )
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]++;
     } else if (bp[(int)ac_pc] == 2){
       bp[(int)ac_pc]++;
@@ -1052,6 +1074,7 @@ void ac_behavior( bgtz )
   } else {
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]--;
     } else if (bp[(int)ac_pc] == 1){
       bp[(int)ac_pc]--;
@@ -1071,6 +1094,7 @@ void ac_behavior( bltz )
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]++;
     } else if (bp[(int)ac_pc] == 2){
       bp[(int)ac_pc]++;
@@ -1079,6 +1103,7 @@ void ac_behavior( bltz )
   } else {
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]--;
     } else if (bp[(int)ac_pc] == 1){
       bp[(int)ac_pc]--;
@@ -1098,6 +1123,7 @@ void ac_behavior( bgez )
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]++;
     } else if (bp[(int)ac_pc] == 2){
       bp[(int)ac_pc]++;
@@ -1106,6 +1132,7 @@ void ac_behavior( bgez )
   } else {
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]--;
     } else if (bp[(int)ac_pc] == 1){
       bp[(int)ac_pc]--;
@@ -1126,6 +1153,7 @@ void ac_behavior( bltzal )
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]++;
     } else if (bp[(int)ac_pc] == 2){
       bp[(int)ac_pc]++;
@@ -1134,6 +1162,7 @@ void ac_behavior( bltzal )
   } else {
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]--;
     } else if (bp[(int)ac_pc] == 1){
       bp[(int)ac_pc]--;
@@ -1155,6 +1184,7 @@ void ac_behavior( bgezal )
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]++;
     } else if (bp[(int)ac_pc] == 2){
       bp[(int)ac_pc]++;
@@ -1163,6 +1193,7 @@ void ac_behavior( bgezal )
   } else {
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
+      dynamicStalls7 += 4;
       bp[(int)ac_pc]--;
     } else if (bp[(int)ac_pc] == 1){
       bp[(int)ac_pc]--;
