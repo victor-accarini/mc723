@@ -974,6 +974,12 @@ void ac_behavior( beq )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif
+    if (predict == 0){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+    }
+
     branchStalls += 3;
     branchStalls7 += 4;
     if (bp[(int)ac_pc] < 2){
@@ -985,6 +991,11 @@ void ac_behavior( beq )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
+    if (predict == 1){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+    }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
       dynamicStalls7 += 4;
@@ -1003,6 +1014,11 @@ void ac_behavior( bne )
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif
+    if (predict == 0){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+    }
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1014,6 +1030,11 @@ void ac_behavior( bne )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
+    if (predict == 1){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+    }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
       dynamicStalls7 += 4;
@@ -1031,7 +1052,12 @@ void ac_behavior( blez )
   if( (RB[rs] == 0 ) || (RB[rs]&0x80000000 ) ){
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2), 1;
-#endif 
+#endif
+    if (predict == 0){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+    }
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1043,6 +1069,11 @@ void ac_behavior( blez )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
+    if (predict == 1){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+    }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
       dynamicStalls7 += 4;
@@ -1060,7 +1091,12 @@ void ac_behavior( bgtz )
   if( !(RB[rs] & 0x80000000) && (RB[rs]!=0) ){
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
-#endif 
+#endif
+    if (predict == 0){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+    }
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1072,6 +1108,11 @@ void ac_behavior( bgtz )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
+    if (predict == 1){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+    }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
       dynamicStalls7 += 4;
@@ -1089,7 +1130,12 @@ void ac_behavior( bltz )
   if( RB[rs] & 0x80000000 ){
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
-#endif 
+#endif
+    if (predict == 0){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+    }
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1101,6 +1147,11 @@ void ac_behavior( bltz )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
+    if (predict == 1){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+    }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
       dynamicStalls7 += 4;
@@ -1118,7 +1169,12 @@ void ac_behavior( bgez )
   if( !(RB[rs] & 0x80000000) ){
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
-#endif 
+#endif
+    if (predict == 0){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+    }
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1130,6 +1186,11 @@ void ac_behavior( bgez )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
+    if (predict == 1){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+    }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
       dynamicStalls7 += 4;
@@ -1148,7 +1209,12 @@ void ac_behavior( bltzal )
   if( RB[rs] & 0x80000000 ){
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
-#endif 
+#endif
+    if (predict == 0){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+    }
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1160,6 +1226,11 @@ void ac_behavior( bltzal )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
+    if (predict == 1){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+    }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
       dynamicStalls7 += 4;
@@ -1179,7 +1250,12 @@ void ac_behavior( bgezal )
   if( !(RB[rs] & 0x80000000) ){
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
-#endif 
+#endif
+    if (predict == 0){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+    }
     branchStalls += 3;
     branchStalls7 += 4;
      if (bp[(int)ac_pc] < 2){
@@ -1191,6 +1267,11 @@ void ac_behavior( bgezal )
     }
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   } else {
+    if (predict == 1){
+        branchStalls2 += 3;
+        branchStalls27 += 4;
+        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+    }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
       dynamicStalls7 += 4;
