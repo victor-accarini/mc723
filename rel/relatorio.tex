@@ -1,0 +1,87 @@
+\documentclass[pdftex,12pt,a4paper]{article}
+\usepackage[pdftex]{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{amsfonts,amssymb,graphicx,enumerate}
+\usepackage[centertags]{amsmath}
+\usepackage{parskip}
+% Configuracoes de pagina
+\usepackage[lmargin=3cm,rmargin=3cm,tmargin=3cm,bmargin=3cm]{geometry}
+
+\begin{document}
+
+\title{Projeto 2\\Laboratório de Sistemas Computacionais}
+\author{Victor Accarini D'Lima\\RA105753\\Grupo 15}
+\date{\today}
+\maketitle
+
+\bigskip
+
+\section{Introdução e Objetivos}
+Esse projeto tem como objetivo verificar as diferenças de desempenho entre 
+diferentes implementações de um processador MIPS utilizando o simulador ArchC. 
+Para verificar essas diferenças foram utilizadas 7 configurações diferentes, 
+variando entre implementações de um \textit{pipeline} de 5 estágios sem 
+\textit{forwards}, sem \textit{branch predictor}, para um pipeline de 5 estágios 
+superescalar e um pipeline de 7 estágios ambos com controle de \textit{hazards}, 
+para cada uma dessas configurações foram utilizadas também 4 configurações de cache.
+
+Os 3 programas utilizados para a avaliação de desempenho foram: Um algoritmo para 
+encontrar o menor caminho entre dois pontos (Dijkstra), um encoder de jpeg e um 
+gerador de chaves criptográficas SHA, todos disponibilizados no repositório do 
+professor.
+
+--Escrever sobre os resultados
+
+\section{Metodologia}
+Considerando que o simulador disponibilizado executa uma instrução por vez, 
+foram implementadas estruturas para simular um pipeline e seus dispositivos 
+de controles de \textit{hazards}. Ao rodar os programas de teste no simulador 
+os valores das penalidades e ganhos em ciclos de cada configuração simulada 
+eram mostrados no final da execução.
+
+Para a simulação dos dispositivos de cache foi utilizado o programa Dinero, 
+que dado a configuração de cache pedida e as instruções, gravações e leituras 
+da memória retornava a porcentagem de falhas de acesso a cache.
+
+\subsection{Arquiteturas}
+
+As quatro configurações de cache selecionadas para a avaliação foram:
+
+\begin{description}
+\item[Cache 1] \hfill \\
+Cache de instruções:\\
+L1 - Tamanho: 2k Blocos: 4bytes 1-Associativo\\
+Cache de Dados:\\
+L1 - Tamanho: 4k Blocos: 16bytes 2-Associativo
+\item[Cache 2] \hfill \\
+Cache de instruções:\\
+L1 - Tamanho: 1k Blocos: 4bytes 2-Associativo\\
+Cache de Dados:\\
+L1 - Tamanho: 8k Blocos: 16bytes 4-Associativo
+\item[Cache 3] \hfill \\
+Cache de instruções:\\
+L1 - Tamanho: 2k Blocos: 4bytes 1-Associativo\\
+L2 - Tamanho: 8k Blocos: 1bytes 2-Associativo\\
+Cache de Dados:\\
+L1 - Tamanho: 4k Blocos: 16bytes 4-Associativo\\
+L2 - Tamanho: 32k Blocos: 64bytes 4-Associativo
+\item[Cache 4] \hfill \\
+Cache de instruções:\\
+L1 - Tamanho: 1k Blocos: 4bytes 2-Associativo\\
+L2 - Tamanho: 8k Blocos: 1bytes 2-Associativo\\
+Cache de Dados:\\
+L1 - Tamanho: 16k Blocos: 8bytes 1-Associativo\\
+L2 - Tamanho: 32k Blocos: 64bytes 4-Associativo
+\end{description}
+
+\subsection{Benchmarks}
+
+More plain text.
+
+\section{Análise de Dados}
+
+\section{Conclusão}
+
+\end{document}
+
