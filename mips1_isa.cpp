@@ -977,7 +977,7 @@ void ac_behavior( beq )
     if (predict == 0){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
     }
 
     branchStalls += 3;
@@ -994,7 +994,7 @@ void ac_behavior( beq )
     if (predict == 1){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1017,7 +1017,7 @@ void ac_behavior( bne )
     if (predict == 0){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
     }
     branchStalls += 3;
     branchStalls7 += 4;
@@ -1033,7 +1033,7 @@ void ac_behavior( bne )
     if (predict == 1){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1056,7 +1056,7 @@ void ac_behavior( blez )
     if (predict == 0){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
     }
     branchStalls += 3;
     branchStalls7 += 4;
@@ -1072,7 +1072,7 @@ void ac_behavior( blez )
     if (predict == 1){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1095,7 +1095,7 @@ void ac_behavior( bgtz )
     if (predict == 0){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
     }
     branchStalls += 3;
     branchStalls7 += 4;
@@ -1111,7 +1111,7 @@ void ac_behavior( bgtz )
     if (predict == 1){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1134,7 +1134,7 @@ void ac_behavior( bltz )
     if (predict == 0){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
     }
     branchStalls += 3;
     branchStalls7 += 4;
@@ -1150,7 +1150,7 @@ void ac_behavior( bltz )
     if (predict == 1){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1173,7 +1173,7 @@ void ac_behavior( bgez )
     if (predict == 0){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
     }
     branchStalls += 3;
     branchStalls7 += 4;
@@ -1189,7 +1189,7 @@ void ac_behavior( bgez )
     if (predict == 1){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1213,7 +1213,7 @@ void ac_behavior( bltzal )
     if (predict == 0){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
     }
     branchStalls += 3;
     branchStalls7 += 4;
@@ -1229,7 +1229,7 @@ void ac_behavior( bltzal )
     if (predict == 1){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
@@ -1254,7 +1254,7 @@ void ac_behavior( bgezal )
     if (predict == 0){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 1;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 1;
     }
     branchStalls += 3;
     branchStalls7 += 4;
@@ -1270,7 +1270,7 @@ void ac_behavior( bgezal )
     if (predict == 1){
         branchStalls2 += 3;
         branchStalls27 += 4;
-        bhist[(int)ac_pc, bp[(int)ac_pc]] = 0;
+        bhist[(int)ac_pc][bp[(int)ac_pc]] = 0;
     }
     if (bp[(int)ac_pc] > 1){
       dynamicStalls += 3;
