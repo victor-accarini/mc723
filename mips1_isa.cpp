@@ -63,6 +63,11 @@ int countForward7 = 0;
 int countStalls7 = 0;
 int branchStalls7 = 0;
 
+//counters superscalar
+int countInstr = 0;
+int loadFlag = 0;
+int load = 0;
+
 //7-Stage Pipeline controls
 std::vector <std::vector <int> > stage7 (3,std::vector<int>(7,0));
 std::vector <std::vector <bool> > stage7ctrl (2,std::vector<bool>(7,0));
@@ -202,10 +207,21 @@ void ac_behavior( instruction )
 #endif 
   printf("2 %x din\n", (int)ac_pc);
   movepipe();
+
+  //superscalar
+  loadFlag = load;
+  load = 0;
 };
  
 //! Instruction Format behavior methods.
 void ac_behavior( Type_R ){
+  //superscalar
+  //Verify if predecessor instruction used the same registers
+  if (loadFlag == 1){
+    if (!(stage7ctrl[0][1] == true && (stage7[0][1] == rt || stage7[0][1] == rs))){
+      countInstr += 1;
+    }
+  }
   //5stage
   preRegWrite = 1;
   preMemRead = 0;
@@ -225,6 +241,14 @@ void ac_behavior( Type_R ){
   //5stage_end
 }
 void ac_behavior( Type_R_Jump ){
+  //superscalar
+  //Verify if predecessor instruction used the same registers
+  if (loadFlag == 1){
+    if (!(stage7ctrl[0][1] == true && (stage7[0][1] == rt || stage7[0][1] == rs))){
+      countInstr += 1;
+    }
+  }
+
   //5stage
   preRegWrite = 1;
   preMemRead = 0;
@@ -244,6 +268,13 @@ void ac_behavior( Type_R_Jump ){
   //5stage_end
 }
 void ac_behavior( Type_NOP ){
+  //superscalar
+  //Verify if predecessor instruction used the same registers
+  if (loadFlag == 1){
+    if (!(stage7ctrl[0][1] == true && (stage7[0][1] == rt || stage7[0][1] == rs))){
+      countInstr += 1;
+    }
+  }
   //5stage
   preRegWrite = 0;
   preMemRead = 0;
@@ -263,6 +294,13 @@ void ac_behavior( Type_NOP ){
   //5stage_end
 }
 void ac_behavior( Type_I ){
+  //superscalar
+  //Verify if predecessor instruction used the same registers
+  if (loadFlag == 1){
+    if (!(stage7ctrl[0][1] == true && (stage7[0][1] == rt || stage7[0][1] == rs))){
+      countInstr += 1;
+    }
+  }
   //5stage
   preRegWrite = 0;
   preMemRead = 0;
@@ -295,6 +333,16 @@ void ac_behavior( Type_I ){
   }
 }
 void ac_behavior( Type_I_STORE ){
+  //superscalar
+  load = 1;
+
+  //Verify if predecessor instruction used the same registers
+  if (loadFlag == 0){
+      if (!(stage7ctrl[0][1] == true && (stage7[0][1] == rt || stage7[0][1] == rs))){
+          countInstr += 1;
+      }
+  }
+
   //5stage
   preRegWrite = 0;
   preMemRead = 0;
@@ -316,6 +364,13 @@ void ac_behavior( Type_I_STORE ){
   //5stage_end
 }
 void ac_behavior( Type_I_LOAD ){
+  //superscalar
+  //Verify if predecessor instruction used the same registers
+  if (loadFlag == 1){
+    if (!(stage7ctrl[0][1] == true && (stage7[0][1] == rt || stage7[0][1] == rs))){
+      countInstr += 1;
+    }
+  }
   //5stage
   preRegWrite = 1;
   preMemRead = 0;
@@ -335,6 +390,15 @@ void ac_behavior( Type_I_LOAD ){
   //5stage_end
 }
 void ac_behavior( Type_I_LOAD_MEM ){
+  //superscalar
+  load = 1;
+  //Verify if predecessor instruction used the same registers
+  if (loadFlag == 0){
+      if (!(stage7ctrl[0][1] == true && (stage7[0][1] == rt || stage7[0][1] == rs))){
+          countInstr += 1;
+      }
+  }
+
   //5stage
   preRegWrite = 1;
   preMemRead = 1;
@@ -356,6 +420,13 @@ void ac_behavior( Type_I_LOAD_MEM ){
   //5stage_end
 }
 void ac_behavior( Type_J ){
+  //superscalar
+  //Verify if predecessor instruction used the same registers
+  if (loadFlag == 1){
+    if (!(stage7ctrl[0][1] == true && (stage7[0][1] == rt || stage7[0][1] == rs))){
+      countInstr += 1;
+    }
+  }
   //5stage
   preRegWrite = 0;
   preMemRead = 0;
@@ -409,6 +480,9 @@ void ac_behavior(end)
   printf("$$$ DynamicStalls2: %d $$$\n", dynamicStalls2);
   printf("$$$ DynamicStalls2 - 7: %d $$$\n", dynamicStalls27);
   
+  printf("--- Superscalar ---\n");
+  printf("$$$ ParallelInstructions: %d $$$\n", countInstr);
+
   dbg_printf("@@@ end behavior @@@\n");
 }
 
