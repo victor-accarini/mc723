@@ -423,9 +423,7 @@ void ac_behavior( Type_J ){
   //superscalar
   //Verify if predecessor instruction used the same registers
   if (loadFlag == 1){
-    if (!(stage7ctrl[0][1] == true && (stage7[0][1] == rt || stage7[0][1] == rs))){
-      countInstr += 1;
-    }
+    countInstr += 1;
   }
   //5stage
   preRegWrite = 0;
