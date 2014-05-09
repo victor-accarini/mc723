@@ -18,6 +18,7 @@
 \bigskip
 
 \section{Introdução e Objetivos}
+
 Esse projeto tem como objetivo verificar as diferenças de desempenho entre 
 diferentes implementações de um processador MIPS utilizando o simulador ArchC. 
 Para verificar essas diferenças foram utilizadas 7 configurações diferentes, 
@@ -27,13 +28,14 @@ superescalar e um pipeline de 7 estágios ambos com controle de \textit{hazards}
 para cada uma dessas configurações foram utilizadas também 4 configurações de cache.
 
 Os 3 programas utilizados para a avaliação de desempenho foram: Um algoritmo para 
-encontrar o menor caminho entre dois pontos (Dijkstra), um encoder de jpeg e um 
-gerador de chaves criptográficas SHA, todos disponibilizados no repositório do 
+encontrar o menor caminho entre dois pontos (Dijkstra), um encoder de jpeg (JPEG) e um 
+gerador de chaves criptográficas SHA (SHA), todos disponibilizados no repositório do 
 professor.
 
 --Escrever sobre os resultados
 
 \section{Metodologia}
+
 Considerando que o simulador disponibilizado executa uma instrução por vez, 
 foram implementadas estruturas para simular um pipeline e seus dispositivos 
 de controles de \textit{hazards}. Ao rodar os programas de teste no simulador 
@@ -44,7 +46,7 @@ Para a simulação dos dispositivos de cache foi utilizado o programa Dinero,
 que dado a configuração de cache pedida e as instruções, gravações e leituras 
 da memória retornava a porcentagem de falhas de acesso a cache.
 
-\subsection{Arquiteturas}
+\subsection{Cache}
 
 As quatro configurações de cache selecionadas para a avaliação foram:
 
@@ -75,11 +77,74 @@ L1 - Tamanho: 16k Blocos: 8bytes 1-Associativo\\
 L2 - Tamanho: 32k Blocos: 64bytes 4-Associativo
 \end{description}
 
-\subsection{Benchmarks}
+Foram testadas diversas outras configurações para as caches, porém essas configurações foram as que 
+retornaram os resultados mais plausíveis, ou seja, com \textit{miss} entre 2-8\% o que é próximo da margem 
+encontrada na literatura.
 
-More plain text.
+\subsection{Arquiteturas}
+
+Durante a simulação observamos diversos eventos, o primeiro é o nº de instruções executadas, seguido pela 
+quantidade de \textit{load-use hazards(LUH)}, \textit{forwards}, \textit{branchs w/ static predictor(BSP)}, 
+\textit{branchs w/ local saturating counter predictor(BLSCP)}, \textit{branchs w/ local two-level adaptive 
+predictor(BLTAP)} e no caso da arquitetura superescalar o nº de instruções em paralelo.
+
+Algumas ressalvas precisam ser feitas com relação ao BLSCP e BLTAP pois na simulação foi considerado 
+que as tabelas utilizadas para guardar os valores referentes a cada branch possui capacidade para 
+alocar todos os branchs dos programas utilizados. Na arquitetura superescalar a divisão do pipeline 
+ocorre do estágio ID para o EX onde um pipeline trata de instruções de load-store e outro do resto.
+
+A arquitetura com o pipeline de 7 estágios adiciona as funcionalidades do \textit{Translation 
+Lookaside Buffer(TLB)} ao processador MIPS colocando 1 estágio de \textit{Instruction 
+Translation(IT)} antes do estágio IF e um estágio de \textit{Memory Translation(MT)} antes do 
+estágio MEM.
+
+Na tabela abaixo é mostrada cada arquitetura considerada e suas funcionalidades:
+
+\begin{table}[h]
+\resizebox{15cm}{!} {
+\begin{tabular}{l|lllllll}
+Arquiteturas/Funcionalidades  & Modelo 1 & Modelo 2 & Modelo 3 & Modelo 4 & Modelo 5 & Modelo 6 & Modelo 7 \\ \hline
+Estágios de \textit{Pipeline} & 5        & 5        & 5        & 5        & 5        & 7        & 7        \\
+LUH                           & Não      & Sim      & Sim      & Sim      & Sim      & Sim      & Sim      \\
+\textit{Forwards}             & Não      & Sim      & Sim      & Sim      & Sim      & Sim      & Sim      \\
+BSP                           & Sim      & Sim      & Não      & Não      & Não      & Não      & Não      \\
+BLSCP                         & Não      & Não      & Sim      & Não      & Não      & Sim      & Não      \\
+BLTAP                         & Não      & Não      & Não      & Sim      & Sim      & Não      & Sim      \\
+Instruções em Paralelo        & Não      & Não      & Não      & Não      & Sim      & Não      & Não      \\ \hline
+\end{tabular}
+}
+\end{table}
+
+\subsection{\textit{Branch Predictors}}
+
+-- Exemplo de como funcionam
 
 \section{Análise de Dados}
+
+Com os três programas selecionados Dijkstra, JPEG e SHA obtivemos os seguintes resultados para os modelos de 1 a 4:
+
+\begin{table}[h]
+\resizebox{15cm}{!} {
+\begin{tabular}{l|lll|lll|lll|lll|}
+                        & Modelo 1  &          &          & Modelo 2  &          &          & Modelo 3  &          &          & Modelo 4  &          &          \\
+                        & Dijkstra  & JPEG     & SHA      & Dijkstra  & JPEG     & SHA      & Dijkstra  & JPEG     & SHA      & Dijkstra  & JPEG     & SHA      \\ \hline
+Nº de Instruções        & 285280151 & 29474823 & 13036287 & 285280151 & 29474823 & 13036287 & 285280151 & 29474823 & 13036287 & 285280151 & 29474823 & 13036287 \\
+LUH                     & 0         & 49232    & 0        & 0         & 49232    & 0        & 0         & 49232    & 0        & 0         & 49232    & 0        \\
+Forwards                & 289129896 & 20216111 & 7415403  & 0         & 0        & 0        & 0         & 0        & 0        & 0         & 0        & 0        \\
+BSP                     & 74772918  & 6473388  & 2389284  & 74772918  & 6473388  & 2389284  & 0         & 0        & 0        & 0         & 0        & 0        \\
+BLSCP                   & 0         & 0        & 0        & 0         & 0        & 0        & 990717    & 772785   & 104520   & 0         & 0        & 0        \\
+BLTAP                   & 0         & 0        & 0        & 0         & 0        & 0        & 0         & 0        & 0        & 882597    & 750516   & 119184   \\
+Instruções em Paralelo  & 0         & 0        & 0        & 0         & 0        & 0        & 0         & 0        & 0        & 0         & 0        & 0        \\
+Cache miss L1-Instrução &           &          &          &           &          &          &           &          &          &           &          &          \\
+Cache miss L1-dados     &           &          &          &           &          &          &           &          &          &           &          &          \\
+Cache miss L2-Instrução &           &          &          &           &          &          &           &          &          &           &          &          \\
+Cache miss L2-dados     &           &          &          &           &          &          &           &          &          &           &          &          \\
+                        &           &          &          &           &          &          &           &          &          &           &          &          \\ \hline
+Total de Ciclos         & 649182965 & 56213554 & 22840974 & 360053069 & 35997443 & 15425571 & 286270868 & 30296840 & 13140807 & 286162748 & 30274571 & 13155471 \\ \hline
+Tempo(s)                &           &          &          &           &          &          &           &          &          &           &          &        \\ \hline 
+\end{tabular}
+}
+\end{table}
 
 \section{Conclusão}
 
